@@ -1,46 +1,48 @@
 const express = require("express");
 const app = express();
-const userModel = require("./usermodel");
+const path = require("path");
+const userModel = require("./models/user");
 
-// const path = require("path");
 
-// app.set("view engine", "ejs");
+app.set("view engine", "ejs");
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "public")));
 
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: true }));
-// app.use(express.static(path.join(__dirname, "public")));
+app.get("/", (req, res) => {
+  res.render("app");
+})
 
-app.get('/', (req, res) => {
-  res.send("Hey");
-});
+app.get("/read", async (req, res) => {
+  let allusers = await userModel.find()
 
-app.get('/create', async (req, res) => {
+  res.render("read", { users: allusers });
+})
 
+app.post("/create", async (req, res) => {
+  // let { name, email, image } = req.body;
   let createdUser = await userModel.create({
-    name: "Divyansh Bansal",
-    username: "Yaansh",
-    email: "divyanshbansal56@gmail.com"
+    name: req.body.name,
+    email: req.body.email,
+    image: req.body.image
   })
-
-  res.send(createdUser);
+  res.redirect("/read");
 });
 
-app.get('/update', async (req, res) => {
+app.get("/delete/:id", async (req, res) => {
+  let allusers = await userModel.findOneAndDelete({ _id: req.params.id })
+  res.redirect("/read");
+})
 
-  let updatedUser = await userModel.findOneAndUpdate({ name: "Divyansh Bansal" }, { name: "Divyansh" }, { new: true })
+app.get("/edit/:id", async (req, res) => {
+  let user = await userModel.findOne({ _id: req.params.id })
+  res.render("edit", { user });
+})
 
-  res.send(updatedUser);
-});
-
-app.get('/read', async (req, res) => {
-  let readUser = await userModel.find({ name: "Divyansh" });
-  res.send(readUser);
-});
-
-app.get('/delete', async (req, res) => {
-  let deletedUser = await userModel.findOneAndDelete({ name: "Divyansh" });
-  res.send(deletedUser);
-});
-
+app.post("/update/:id", async (req, res) => {
+  let { image, email, name } = req.body;
+  let users = await userModel.findOneAndUpdate({ _id: req.params.id }, { image, email, name }, { new: true })
+  res.redirect("/read");
+})
 
 app.listen(3000);
